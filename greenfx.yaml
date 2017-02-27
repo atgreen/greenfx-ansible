@@ -1,0 +1,6 @@
+- hosts: ose-master01.shiftlogic.io
+  name: Ping OpenShift Master
+  tasks:
+    - name: ping the openshift master
+      ping:
+      
