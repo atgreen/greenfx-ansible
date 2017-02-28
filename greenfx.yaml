@@ -18,5 +18,7 @@
           src: fx.yaml.j2
           dest: /tmp/fx.yaml
           mode: 0600
+      always_run: yes
     - name: dump it
       command: cat /tmp/fx.yaml
+      always_run: yes
