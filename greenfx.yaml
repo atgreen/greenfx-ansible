@@ -1,10 +1,7 @@
 - hosts: ose-master01.shiftlogic.io
-  name: Ping OpenShift Master
+  name: Ping OpenShift Master and list projects
   become: yes
   tasks:
-    - name: whoami?
-      command: /usr/bin/whoami
-      always_run: yes
     - name: ping the openshift master
       ping:
     - name: list projects
