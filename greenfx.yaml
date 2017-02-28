@@ -20,7 +20,3 @@
           mode: 0600
     - name: dump it
       command: cat /tmp/fx.yaml
-      
-	  
-
-      
