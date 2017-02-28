@@ -3,9 +3,9 @@
   name: Ping OpenShift Master
   tasks:
     - name: whoami?
-      shell: whoami
+      command: whoami
     - name: ping the openshift master
       ping:
     - name: list projects
-      shell: oc projects list
+      command: oc projects list
       
