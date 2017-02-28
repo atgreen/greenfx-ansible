@@ -8,7 +8,7 @@
       command: oc login --token={{ token }} --server=https://{{ master }}
       always_run: yes
     - name: create a project
-      command: /usr/bin/oc new-project newone5
+      command: /usr/bin/oc new-project newone6
       always_run: yes
     - name: list projects
       command: /usr/bin/oc projects
@@ -19,6 +19,6 @@
           dest: /tmp/fx.yaml
           mode: 0600
       always_run: yes
-    - name: dump it
-      command: cat /tmp/fx.yaml
-      always_run: yes
+    - name: Instantiate the applications
+      command: /usr/bin/oc new-app --log-level=9  --file=/tmp/fx.yaml
+
