@@ -9,5 +9,8 @@
     - name: create a project
       command: /usr/bin/oc new-project newone
       always_run: yes
+    - name: list projects
+      command: /usr/bin/oc list-projects
+      always_run: yes
 
       
