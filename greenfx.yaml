@@ -7,10 +7,10 @@
     - name: log into openshift
       command: oc login --token={{ token }} --server=https://{{ master }}
     - name: create a project
-      command: /usr/bin/oc new-project newone2
+      command: /usr/bin/oc new-project newone3
       always_run: yes
     - name: list projects
-      command: /usr/bin/oc list-projects
+      command: /usr/bin/oc projects
       always_run: yes
 
       
