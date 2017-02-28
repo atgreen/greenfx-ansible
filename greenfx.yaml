@@ -20,5 +20,5 @@
           mode: 0600
       always_run: yes
     - name: Instantiate the applications
-      command: /usr/bin/oc new-app --log-level=9  --file=/tmp/fx.yaml
+      command: /usr/bin/oc new-app --file=/tmp/fx.yaml
       always_run: yes
