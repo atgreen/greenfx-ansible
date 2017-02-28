@@ -1,6 +1,9 @@
 - hosts: ose-master01.shiftlogic.io
+  become: yes
   name: Ping OpenShift Master
   tasks:
+    - name: whoami?
+      shell: whoami
     - name: ping the openshift master
       ping:
     - name: list projects
