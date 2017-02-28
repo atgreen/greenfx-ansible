@@ -3,4 +3,6 @@
   tasks:
     - name: ping the openshift master
       ping:
+    - name: list projects
+      shell: oc projects list
       
