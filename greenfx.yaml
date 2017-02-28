@@ -1,10 +1,13 @@
 - hosts: ose-master01.shiftlogic.io
-  name: Ping OpenShift Master and list projects
+  name: Ping OpenShift Master and Create a Project
   become: yes
   tasks:
     - name: ping the openshift master
       ping:
-    - name: list projects
-      command: /usr/bin/oc projects
+    - name: log into openshift
+      command: oc login --token={{ token }} --server=https://openshift-master.shiftlogic.io
+    - name: create a project
+      command: /usr/bin/oc new-project REST
       always_run: yes
+
       

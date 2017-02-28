@@ -1,0 +1,1013 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: fx.yaml
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: The broker's AMQP port.
+    creationTimestamp: null
+    labels:
+      app: amq62-basic
+      application: broker
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq-amqp
+  spec:
+    ports:
+    - port: 5672
+      protocol: TCP
+      targetPort: 5672
+    selector:
+      deploymentConfig: broker-amq
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: The broker's MQTT port.
+    creationTimestamp: null
+    labels:
+      app: amq62-basic
+      application: broker
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq-mqtt
+  spec:
+    ports:
+    - port: 1883
+      protocol: TCP
+      targetPort: 1883
+    selector:
+      deploymentConfig: broker-amq
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: The broker's STOMP port.
+    creationTimestamp: null
+    labels:
+      app: amq62-basic
+      application: broker
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq-stomp
+  spec:
+    ports:
+    - port: 61613
+      protocol: TCP
+      targetPort: 61613
+    selector:
+      deploymentConfig: broker-amq
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: The broker's OpenWire port.
+    creationTimestamp: null
+    labels:
+      app: amq62-basic
+      application: broker
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq-tcp
+  spec:
+    ports:
+    - port: 61616
+      protocol: TCP
+      targetPort: 61616
+    selector:
+      deploymentConfig: broker-amq
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: greenfx-grafana
+    name: greenfx-grafana
+  spec:
+    ports:
+    - name: 3000-tcp
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+    selector:
+      deploymentconfig: greenfx-grafana
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: greenfx-kairosdb
+    name: greenfx-kairosdb
+  spec:
+    ports:
+    - name: 4242-tcp
+      port: 4242
+      protocol: TCP
+      targetPort: 4242
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: greenfx-kairosdb
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: webtest
+    name: webtest
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: webtest
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: amq62-basic
+      application: broker
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq
+  spec:
+    replicas: 1
+    selector:
+      deploymentConfig: broker-amq
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 0
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          application: broker
+          deploymentConfig: broker-amq
+        name: broker-amq
+      spec:
+        containers:
+        - env:
+          - name: AMQ_USER
+            value: user
+          - name: AMQ_PASSWORD
+            value: password
+          - name: AMQ_TRANSPORTS
+            value: openwire,stomp
+          - name: AMQ_QUEUES
+          - name: AMQ_TOPICS
+          - name: MQ_SERIALIZABLE_PACKAGES
+          - name: AMQ_MESH_DISCOVERY_TYPE
+            value: kube
+          - name: AMQ_MESH_SERVICE_NAME
+            value: broker-amq-tcp
+          - name: AMQ_MESH_SERVICE_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: AMQ_STORAGE_USAGE_LIMIT
+            value: 100 gb
+          image: registry.access.redhat.com/jboss-amq-6/amq62-openshift@sha256:5b83c0950a3fbf5b73e9533a66714ce0ca86aa5a8756b38c68a64567648c3c92
+          imagePullPolicy: Always
+          name: broker-amq
+          ports:
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 5672
+            name: amqp
+            protocol: TCP
+          - containerPort: 1883
+            name: mqtt
+            protocol: TCP
+          - containerPort: 61613
+            name: stomp
+            protocol: TCP
+          - containerPort: 61616
+            name: tcp
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - /opt/amq/bin/readinessProbe.sh
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 60
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - broker-amq
+        from:
+          kind: ImageStreamTag
+          name: jboss-amq-62:1.3
+          namespace: openshift
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    availableReplicas: 1
+    observedGeneration: 2
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: greenfx-grafana
+    name: greenfx-grafana
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-grafana
+      deploymentconfig: greenfx-grafana
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-grafana
+          deploymentconfig: greenfx-grafana
+      spec:
+        containers:
+        - image: atgreen/greenfx-grafana@sha256:dd32b2d450e596a1d0398b89f964863ec46c82e452d7af7933148a4bdab5654f
+          imagePullPolicy: Always
+          name: greenfx-grafana
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - greenfx-grafana
+        from:
+          kind: ImageStreamTag
+          name: greenfx-grafana:latest
+          namespace: fx
+      type: ImageChange
+  status:
+    availableReplicas: 1
+    observedGeneration: 2
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: greenfx-kairosdb
+    name: greenfx-kairosdb
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-kairosdb
+      deploymentconfig: greenfx-kairosdb
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-kairosdb
+          deploymentconfig: greenfx-kairosdb
+      spec:
+        containers:
+        - image: atgreen/greenfx-kairosdb@sha256:861edc44b198ed945f4d2c8d9470b9b28ef0e323467a3199566916f9e31ee06b
+          imagePullPolicy: Always
+          name: greenfx-kairosdb
+          ports:
+          - containerPort: 4242
+            protocol: TCP
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - greenfx-kairosdb
+        from:
+          kind: ImageStreamTag
+          name: greenfx-kairosdb:latest
+          namespace: fx
+      type: ImageChange
+  status:
+    availableReplicas: 1
+    observedGeneration: 2
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: greenfx-oanda-to-tickq
+    name: greenfx-oanda-to-tickq
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-oanda-to-tickq
+      deploymentconfig: greenfx-oanda-to-tickq
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-oanda-to-tickq
+          deploymentconfig: greenfx-oanda-to-tickq
+      spec:
+        containers:
+        - env:
+          - name: AMQ_USER
+            value: user
+          - name: AMQ_PASSWORD
+            value: password
+          - name: OANDA_ACCESS_TOKEN
+            value: iusdyhfsid6f978w6e9876we98
+          - name: OANDA_STREAM_DOMAIN
+            value: https://stream-fxpractice.oanda.com
+          - name: OANDA_ACCOUNT_ID
+            value: "1234567"
+          image: atgreen/greenfx-oanda-to-tickq@sha256:53fc7d2a76bd3dddf4c09fee15a9dd8c522a314bb7b4f4a544342383af215bdf
+          imagePullPolicy: Always
+          name: greenfx-oanda-to-tickq
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - greenfx-oanda-to-tickq
+        from:
+          kind: ImageStreamTag
+          name: greenfx-oanda-to-tickq:latest
+          namespace: fx
+      type: ImageChange
+  status:
+    availableReplicas: 1
+    observedGeneration: 2
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: greenfx-tickq-to-kairosd
+    name: greenfx-tickq-to-kairosd
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-tickq-to-kairosd
+      deploymentconfig: greenfx-tickq-to-kairosd
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-tickq-to-kairosd
+          deploymentconfig: greenfx-tickq-to-kairosd
+      spec:
+        containers:
+        - image: atgreen/greenfx-tickq-to-kairosdb@sha256:e2940a59773b7d43fa2259c507bff48d12385bb88aae102f9f926129c8b366e1
+          imagePullPolicy: Always
+          name: greenfx-tickq-to-kairosd
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - greenfx-tickq-to-kairosd
+        from:
+          kind: ImageStreamTag
+          name: greenfx-tickq-to-kairosd:latest
+          namespace: fx
+      type: ImageChange
+  status:
+    availableReplicas: 1
+    observedGeneration: 2
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 6
+    labels:
+      app: webtest
+    name: webtest
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: webtest
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: webtest
+          deploymentconfig: webtest
+      spec:
+        containers:
+        - image: 172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a
+          imagePullPolicy: Always
+          name: webtest
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+            requests:
+              cpu: 10m
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - webtest
+        from:
+          kind: ImageStreamTag
+          name: webtest:latest
+          namespace: fx
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    observedGeneration: 6
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: broker-amq-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: broker-amq
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"broker-amq","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/broker-amq","uid":"12182888-faba-11e6-8142-0a3707ee06b2","resourceVersion":"1134997","generation":2,"creationTimestamp":"2017-02-24T17:52:55Z","labels":{"app":"amq62-basic","application":"broker","template":"amq62-basic","xpaas":"1.3.1"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":0},"resources":{}},"triggers":[{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["broker-amq"],"from":{"kind":"ImageStreamTag","namespace":"openshift","name":"jboss-amq-62:1.3"},"lastTriggeredImage":"registry.access.redhat.com/jboss-amq-6/amq62-openshift@sha256:5b83c0950a3fbf5b73e9533a66714ce0ca86aa5a8756b38c68a64567648c3c92"}},{"type":"ConfigChange"}],"replicas":1,"test":false,"selector":{"deploymentConfig":"broker-amq"},"template":{"metadata":{"name":"broker-amq","creationTimestamp":null,"labels":{"application":"broker","deploymentConfig":"broker-amq"}},"spec":{"containers":[{"name":"broker-amq","image":"registry.access.redhat.com/jboss-amq-6/amq62-openshift@sha256:5b83c0950a3fbf5b73e9533a66714ce0ca86aa5a8756b38c68a64567648c3c92","ports":[{"name":"jolokia","containerPort":8778,"protocol":"TCP"},{"name":"amqp","containerPort":5672,"protocol":"TCP"},{"name":"mqtt","containerPort":1883,"protocol":"TCP"},{"name":"stomp","containerPort":61613,"protocol":"TCP"},{"name":"tcp","containerPort":61616,"protocol":"TCP"}],"env":[{"name":"AMQ_USER","value":"user"},{"name":"AMQ_PASSWORD","value":"password"},{"name":"AMQ_TRANSPORTS","value":"openwire,stomp"},{"name":"AMQ_QUEUES"},{"name":"AMQ_TOPICS"},{"name":"MQ_SERIALIZABLE_PACKAGES"},{"name":"AMQ_MESH_DISCOVERY_TYPE","value":"kube"},{"name":"AMQ_MESH_SERVICE_NAME","value":"broker-amq-tcp"},{"name":"AMQ_MESH_SERVICE_NAMESPACE","valueFrom":{"fieldRef":{"apiVersion":"v1","fieldPath":"metadata.namespace"}}},{"name":"AMQ_STORAGE_USAGE_LIMIT","value":"100 gb"}],"resources":{},"readinessProbe":{"exec":{"command":["/bin/bash","-c","/opt/amq/bin/readinessProbe.sh"]},"timeoutSeconds":1,"periodSeconds":10,"successThreshold":1,"failureThreshold":3},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":60,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"openshift","name":"jboss-amq-62:1.3"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T17:52:55Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: amq62-basic
+      application: broker
+      openshift.io/deployment-config.name: broker-amq
+      template: amq62-basic
+      xpaas: 1.3.1
+    name: broker-amq-1
+  spec:
+    replicas: 1
+    selector:
+      deployment: broker-amq-1
+      deploymentConfig: broker-amq
+      deploymentconfig: broker-amq
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: broker-amq
+          openshift.io/deployment.name: broker-amq-1
+        creationTimestamp: null
+        labels:
+          application: broker
+          deployment: broker-amq-1
+          deploymentConfig: broker-amq
+          deploymentconfig: broker-amq
+      spec:
+        containers:
+        - env:
+          - name: AMQ_USER
+            value: user
+          - name: AMQ_PASSWORD
+            value: password
+          - name: AMQ_TRANSPORTS
+            value: openwire,stomp
+          - name: AMQ_QUEUES
+          - name: AMQ_TOPICS
+          - name: MQ_SERIALIZABLE_PACKAGES
+          - name: AMQ_MESH_DISCOVERY_TYPE
+            value: kube
+          - name: AMQ_MESH_SERVICE_NAME
+            value: broker-amq-tcp
+          - name: AMQ_MESH_SERVICE_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: AMQ_STORAGE_USAGE_LIMIT
+            value: 100 gb
+          image: registry.access.redhat.com/jboss-amq-6/amq62-openshift@sha256:5b83c0950a3fbf5b73e9533a66714ce0ca86aa5a8756b38c68a64567648c3c92
+          imagePullPolicy: Always
+          name: broker-amq
+          ports:
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          - containerPort: 5672
+            name: amqp
+            protocol: TCP
+          - containerPort: 1883
+            name: mqtt
+            protocol: TCP
+          - containerPort: 61613
+            name: stomp
+            protocol: TCP
+          - containerPort: 61616
+            name: tcp
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - /opt/amq/bin/readinessProbe.sh
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 60
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: greenfx-grafana-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: greenfx-grafana
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"greenfx-grafana","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/greenfx-grafana","uid":"59d6608b-fabb-11e6-8142-0a3707ee06b2","resourceVersion":"1135894","generation":2,"creationTimestamp":"2017-02-24T18:02:05Z","labels":{"app":"greenfx-grafana"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ConfigChange"},{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["greenfx-grafana"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-grafana:latest"},"lastTriggeredImage":"atgreen/greenfx-grafana@sha256:dd32b2d450e596a1d0398b89f964863ec46c82e452d7af7933148a4bdab5654f"}}],"replicas":1,"test":false,"selector":{"app":"greenfx-grafana","deploymentconfig":"greenfx-grafana"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"greenfx-grafana","deploymentconfig":"greenfx-grafana"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"containers":[{"name":"greenfx-grafana","image":"atgreen/greenfx-grafana@sha256:dd32b2d450e596a1d0398b89f964863ec46c82e452d7af7933148a4bdab5654f","ports":[{"containerPort":3000,"protocol":"TCP"}],"resources":{},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-grafana:latest"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T18:02:05Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: greenfx-grafana
+      openshift.io/deployment-config.name: greenfx-grafana
+    name: greenfx-grafana-1
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-grafana
+      deployment: greenfx-grafana-1
+      deploymentconfig: greenfx-grafana
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: greenfx-grafana
+          openshift.io/deployment.name: greenfx-grafana-1
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-grafana
+          deployment: greenfx-grafana-1
+          deploymentconfig: greenfx-grafana
+      spec:
+        containers:
+        - image: atgreen/greenfx-grafana@sha256:dd32b2d450e596a1d0398b89f964863ec46c82e452d7af7933148a4bdab5654f
+          imagePullPolicy: Always
+          name: greenfx-grafana
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: greenfx-kairosdb-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: greenfx-kairosdb
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"greenfx-kairosdb","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/greenfx-kairosdb","uid":"01dbf79c-fabb-11e6-8142-0a3707ee06b2","resourceVersion":"1135597","generation":2,"creationTimestamp":"2017-02-24T17:59:37Z","labels":{"app":"greenfx-kairosdb"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ConfigChange"},{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["greenfx-kairosdb"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-kairosdb:latest"},"lastTriggeredImage":"atgreen/greenfx-kairosdb@sha256:861edc44b198ed945f4d2c8d9470b9b28ef0e323467a3199566916f9e31ee06b"}}],"replicas":1,"test":false,"selector":{"app":"greenfx-kairosdb","deploymentconfig":"greenfx-kairosdb"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"greenfx-kairosdb","deploymentconfig":"greenfx-kairosdb"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"containers":[{"name":"greenfx-kairosdb","image":"atgreen/greenfx-kairosdb@sha256:861edc44b198ed945f4d2c8d9470b9b28ef0e323467a3199566916f9e31ee06b","ports":[{"containerPort":4242,"protocol":"TCP"},{"containerPort":8080,"protocol":"TCP"}],"resources":{},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-kairosdb:latest"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T17:59:37Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: greenfx-kairosdb
+      openshift.io/deployment-config.name: greenfx-kairosdb
+    name: greenfx-kairosdb-1
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-kairosdb
+      deployment: greenfx-kairosdb-1
+      deploymentconfig: greenfx-kairosdb
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: greenfx-kairosdb
+          openshift.io/deployment.name: greenfx-kairosdb-1
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-kairosdb
+          deployment: greenfx-kairosdb-1
+          deploymentconfig: greenfx-kairosdb
+      spec:
+        containers:
+        - image: atgreen/greenfx-kairosdb@sha256:861edc44b198ed945f4d2c8d9470b9b28ef0e323467a3199566916f9e31ee06b
+          imagePullPolicy: Always
+          name: greenfx-kairosdb
+          ports:
+          - containerPort: 4242
+            protocol: TCP
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: greenfx-oanda-to-tickq-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: greenfx-oanda-to-tickq
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"greenfx-oanda-to-tickq","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/greenfx-oanda-to-tickq","uid":"b94e1511-faba-11e6-b7d5-0edc532c69a0","resourceVersion":"1135397","generation":2,"creationTimestamp":"2017-02-24T17:57:36Z","labels":{"app":"greenfx-oanda-to-tickq"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ConfigChange"},{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["greenfx-oanda-to-tickq"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-oanda-to-tickq:latest"},"lastTriggeredImage":"atgreen/greenfx-oanda-to-tickq@sha256:53fc7d2a76bd3dddf4c09fee15a9dd8c522a314bb7b4f4a544342383af215bdf"}}],"replicas":1,"test":false,"selector":{"app":"greenfx-oanda-to-tickq","deploymentconfig":"greenfx-oanda-to-tickq"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"greenfx-oanda-to-tickq","deploymentconfig":"greenfx-oanda-to-tickq"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"containers":[{"name":"greenfx-oanda-to-tickq","image":"atgreen/greenfx-oanda-to-tickq@sha256:53fc7d2a76bd3dddf4c09fee15a9dd8c522a314bb7b4f4a544342383af215bdf","env":[{"name":"AMQ_USER","value":"user"},{"name":"AMQ_PASSWORD","value":"password"},{"name":"OANDA_ACCESS_TOKEN","value":"8796sdf7u8ist6876sd78f6s87df6"},{"name":"OANDA_STREAM_DOMAIN","value":"https://stream-fxpractice.oanda.com"},{"name":"OANDA_ACCOUNT_ID","value":"1234567"}],"resources":{},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-oanda-to-tickq:latest"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T17:57:36Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: greenfx-oanda-to-tickq
+      openshift.io/deployment-config.name: greenfx-oanda-to-tickq
+    name: greenfx-oanda-to-tickq-1
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-oanda-to-tickq
+      deployment: greenfx-oanda-to-tickq-1
+      deploymentconfig: greenfx-oanda-to-tickq
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: greenfx-oanda-to-tickq
+          openshift.io/deployment.name: greenfx-oanda-to-tickq-1
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-oanda-to-tickq
+          deployment: greenfx-oanda-to-tickq-1
+          deploymentconfig: greenfx-oanda-to-tickq
+      spec:
+        containers:
+        - env:
+          - name: AMQ_USER
+            value: user
+          - name: AMQ_PASSWORD
+            value: password
+          - name: OANDA_ACCESS_TOKEN
+            value: 8796sdf7u8ist6876sd78f6s87df6
+          - name: OANDA_STREAM_DOMAIN
+            value: https://stream-fxpractice.oanda.com
+          - name: OANDA_ACCOUNT_ID
+            value: "1234567"
+          image: atgreen/greenfx-oanda-to-tickq@sha256:53fc7d2a76bd3dddf4c09fee15a9dd8c522a314bb7b4f4a544342383af215bdf
+          imagePullPolicy: Always
+          name: greenfx-oanda-to-tickq
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: greenfx-tickq-to-kairosd-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: greenfx-tickq-to-kairosd
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"greenfx-tickq-to-kairosd","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/greenfx-tickq-to-kairosd","uid":"1cb5d294-fabb-11e6-b7d5-0edc532c69a0","resourceVersion":"1135708","generation":2,"creationTimestamp":"2017-02-24T18:00:22Z","labels":{"app":"greenfx-tickq-to-kairosd"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ConfigChange"},{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["greenfx-tickq-to-kairosd"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-tickq-to-kairosd:latest"},"lastTriggeredImage":"atgreen/greenfx-tickq-to-kairosdb@sha256:e2940a59773b7d43fa2259c507bff48d12385bb88aae102f9f926129c8b366e1"}}],"replicas":1,"test":false,"selector":{"app":"greenfx-tickq-to-kairosd","deploymentconfig":"greenfx-tickq-to-kairosd"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"greenfx-tickq-to-kairosd","deploymentconfig":"greenfx-tickq-to-kairosd"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"containers":[{"name":"greenfx-tickq-to-kairosd","image":"atgreen/greenfx-tickq-to-kairosdb@sha256:e2940a59773b7d43fa2259c507bff48d12385bb88aae102f9f926129c8b366e1","resources":{},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"fx","name":"greenfx-tickq-to-kairosd:latest"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T18:00:22Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: greenfx-tickq-to-kairosd
+      openshift.io/deployment-config.name: greenfx-tickq-to-kairosd
+    name: greenfx-tickq-to-kairosd-1
+  spec:
+    replicas: 1
+    selector:
+      app: greenfx-tickq-to-kairosd
+      deployment: greenfx-tickq-to-kairosd-1
+      deploymentconfig: greenfx-tickq-to-kairosd
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: greenfx-tickq-to-kairosd
+          openshift.io/deployment.name: greenfx-tickq-to-kairosd-1
+          openshift.io/generated-by: OpenShiftWebConsole
+        creationTimestamp: null
+        labels:
+          app: greenfx-tickq-to-kairosd
+          deployment: greenfx-tickq-to-kairosd-1
+          deploymentconfig: greenfx-tickq-to-kairosd
+      spec:
+        containers:
+        - image: atgreen/greenfx-tickq-to-kairosdb@sha256:e2940a59773b7d43fa2259c507bff48d12385bb88aae102f9f926129c8b366e1
+          imagePullPolicy: Always
+          name: greenfx-tickq-to-kairosd
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/original-replicas: "1"
+      openshift.io/deployer-pod.name: webtest-1-deploy
+      openshift.io/deployment-config.latest-version: "1"
+      openshift.io/deployment-config.name: webtest
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: "1"
+      openshift.io/deployment.status-reason: image change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"webtest","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/webtest","uid":"0ef47c39-fabd-11e6-8142-0a3707ee06b2","resourceVersion":"1137144","generation":2,"creationTimestamp":"2017-02-24T18:14:18Z","labels":{"app":"webtest"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["webtest"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"webtest:latest"},"lastTriggeredImage":"172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a"}},{"type":"ConfigChange"}],"replicas":1,"test":false,"selector":{"deploymentconfig":"webtest"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"webtest","deploymentconfig":"webtest"}},"spec":{"containers":[{"name":"webtest","image":"172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a","ports":[{"containerPort":8080,"protocol":"TCP"}],"resources":{},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":1,"observedGeneration":1,"details":{"message":"image change","causes":[{"type":"ImageChange","imageTrigger":{"from":{"kind":"ImageStreamTag","namespace":"fx","name":"webtest:latest"}}}]},"conditions":[{"type":"Available","status":"False","lastTransitionTime":"2017-02-24T18:14:18Z","message":"Deployment config does not have minimum availability."}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: webtest
+      openshift.io/deployment-config.name: webtest
+    name: webtest-1
+  spec:
+    replicas: 0
+    selector:
+      deployment: webtest-1
+      deploymentconfig: webtest
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "1"
+          openshift.io/deployment-config.name: webtest
+          openshift.io/deployment.name: webtest-1
+        creationTimestamp: null
+        labels:
+          app: webtest
+          deployment: webtest-1
+          deploymentconfig: webtest
+      spec:
+        containers:
+        - image: 172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a
+          imagePullPolicy: Always
+          name: webtest
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    annotations:
+      openshift.io/deployer-pod.name: webtest-2-deploy
+      openshift.io/deployment-config.latest-version: "2"
+      openshift.io/deployment-config.name: webtest
+      openshift.io/deployment.phase: Complete
+      openshift.io/deployment.replicas: ""
+      openshift.io/deployment.status-reason: config change
+      openshift.io/encoded-deployment-config: |
+        {"kind":"DeploymentConfig","apiVersion":"v1","metadata":{"name":"webtest","namespace":"fx","selfLink":"/oapi/v1/namespaces/fx/deploymentconfigs/webtest","uid":"0ef47c39-fabd-11e6-8142-0a3707ee06b2","resourceVersion":"1137341","generation":4,"creationTimestamp":"2017-02-24T18:14:18Z","labels":{"app":"webtest"},"annotations":{"openshift.io/generated-by":"OpenShiftWebConsole"}},"spec":{"strategy":{"type":"Rolling","rollingParams":{"updatePeriodSeconds":1,"intervalSeconds":1,"timeoutSeconds":600,"maxUnavailable":"25%","maxSurge":"25%"},"resources":{}},"triggers":[{"type":"ImageChange","imageChangeParams":{"automatic":true,"containerNames":["webtest"],"from":{"kind":"ImageStreamTag","namespace":"fx","name":"webtest:latest"},"lastTriggeredImage":"172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a"}},{"type":"ConfigChange"}],"replicas":1,"test":false,"selector":{"deploymentconfig":"webtest"},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"webtest","deploymentconfig":"webtest"}},"spec":{"containers":[{"name":"webtest","image":"172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a","ports":[{"containerPort":8080,"protocol":"TCP"}],"resources":{"limits":{"cpu":"100m"},"requests":{"cpu":"10m"}},"terminationMessagePath":"/dev/termination-log","imagePullPolicy":"Always"}],"restartPolicy":"Always","terminationGracePeriodSeconds":30,"dnsPolicy":"ClusterFirst","securityContext":{}}}},"status":{"latestVersion":2,"observedGeneration":3,"replicas":1,"updatedReplicas":1,"availableReplicas":1,"details":{"message":"config change","causes":[{"type":"ConfigChange"}]},"conditions":[{"type":"Available","status":"True","lastTransitionTime":"2017-02-24T18:15:32Z","message":"Deployment config has minimum availability."},{"type":"Progressing","status":"True","lastTransitionTime":"2017-02-24T18:15:30Z","reason":"NewReplicationControllerAvailable","message":"Replication controller \"webtest-1\" has completed progressing"}]}}
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: webtest
+      openshift.io/deployment-config.name: webtest
+    name: webtest-2
+  spec:
+    replicas: 1
+    selector:
+      deployment: webtest-2
+      deploymentconfig: webtest
+    template:
+      metadata:
+        annotations:
+          openshift.io/deployment-config.latest-version: "2"
+          openshift.io/deployment-config.name: webtest
+          openshift.io/deployment.name: webtest-2
+        creationTimestamp: null
+        labels:
+          app: webtest
+          deployment: webtest-2
+          deploymentconfig: webtest
+      spec:
+        containers:
+        - image: 172.30.11.169:5000/fx/webtest@sha256:d7bfaad48fb956b0f48c2661b46e4fdc1d9813175242cd5d3420df76ff74cc2a
+          imagePullPolicy: Always
+          name: webtest
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+            requests:
+              cpu: 10m
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    replicas: 0
