@@ -8,7 +8,7 @@
       command: oc login --token={{ token }} --server=https://{{ master }}
       always_run: yes
     - name: create a project
-      command: /usr/bin/oc new-project newone7
+      command: /usr/bin/oc new-project newone8
       always_run: yes
     - name: list projects
       command: /usr/bin/oc projects
