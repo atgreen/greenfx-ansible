@@ -7,7 +7,7 @@
     - name: log into openshift
       command: oc login --token={{ token }} --server=https://openshift-master.shiftlogic.io
     - name: create a project
-      command: /usr/bin/oc new-project newone
+      command: /usr/bin/oc new-project newone1
       always_run: yes
     - name: list projects
       command: /usr/bin/oc list-projects
