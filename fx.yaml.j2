@@ -441,7 +441,7 @@ objects:
           - name: OANDA_STREAM_DOMAIN
             value: {{ OANDA_STREAM_DOMAIN }}
           - name: OANDA_ACCOUNT_ID
-            value: {{ OANDA_ACCOUNT_ID }}
+            value: "{{ OANDA_ACCOUNT_ID }}"
           image: atgreen/greenfx-oanda-to-tickq@sha256:53fc7d2a76bd3dddf4c09fee15a9dd8c522a314bb7b4f4a544342383af215bdf
           imagePullPolicy: Always
           name: greenfx-oanda-to-tickq
