@@ -3,8 +3,10 @@
   tasks:
     - name: whoami?
       command: /usr/bin/whoami
+      always_run: yes
     - name: ping the openshift master
       ping:
     - name: list projects
       command: /usr/bin/oc projects list
+      always_run: yes
       
