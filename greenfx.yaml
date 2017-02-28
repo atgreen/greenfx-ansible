@@ -13,5 +13,14 @@
     - name: list projects
       command: /usr/bin/oc projects
       always_run: yes
+    - name: Get the application template file over
+      template:
+          src: fx.yaml.j2
+          dest: /tmp/fx.yaml
+          mode: 0600
+    - name: dump it
+      command: cat /tmp/fx.yaml
+      
+	  
 
       
