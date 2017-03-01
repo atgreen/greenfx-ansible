@@ -24,4 +24,4 @@
       always_run: yes
     - name: Create a route
       command: /usr/bin/oc expose service greenfx-grafana -l name=greenfx-grafana
-      alway_run: yes
+      always_run: yes
