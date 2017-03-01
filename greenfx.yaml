@@ -8,7 +8,7 @@
       command: oc login --token={{ token }} --server=https://{{ master }}
       always_run: yes
     - name: create a project
-      command: /usr/bin/oc new-project newone9
+      command: /usr/bin/oc new-project newone10
       always_run: yes
     - name: list projects
       command: /usr/bin/oc projects
@@ -22,3 +22,6 @@
     - name: Instantiate the applications
       command: /usr/bin/oc new-app --file=/tmp/fx.yaml
       always_run: yes
+    - name: Create a route
+      command: /usr/bin/oc expose service greenfx-grafana -l name=greenfx-grafana
+      alway_run: yes
