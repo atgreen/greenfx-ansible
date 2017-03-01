@@ -25,3 +25,9 @@
     - name: Create a route
       command: /usr/bin/oc expose service greenfx-grafana -l name=greenfx-grafana
       always_run: yes
+    - name: Create WebTest
+      command: /usr/bin/oc new-app https://github.com/atgreen/greenfx-webtest.git -l name=w3
+      always_run: yes
+    - name: Create a route
+      command: /usr/bin/oc expose service greenfx-webtest -l name=greenfx-webtest
+      always_run: yes
